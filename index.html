@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudMatrix Security Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://alcdn.msftauth.net/browser/2.28.1/js/msal-browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+    <!-- Authentication Loading Screen -->
+    <div id="auth-loading" class="auth-loading">
+        <div class="auth-loading__content">
+            <div class="logo">
+                <span class="logo__icon">🛡️</span>
+                <span class="logo__text">CloudMatrix</span>
+            </div>
+            <div class="loading-spinner"></div>
+            <p>Initializing security platform...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen hidden">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="logo">
+                    <span class="logo__icon">🛡️</span>
+                    <span class="logo__text">CloudMatrix</span>
+                </div>
+                <h1>Security Platform</h1>
+                <p>Enterprise-grade security management and monitoring</p>
+            </div>
+            <div class="login-form">
+                <button id="login-btn" class="btn btn--primary btn--lg btn--full-width">
+                    Sign in with Microsoft
+                </button>
+                <p class="login-disclaimer">
+                    By signing in, you agree to our security policies and terms of use.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app hidden">
+        <!-- Navigation Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo">
+                        <span class="logo__icon">🛡️</span>
+                        <span class="logo__text">CloudMatrix</span>
+                    </div>
+                    <nav class="nav-tabs">
+                        <button class="nav-tab nav-tab--active" data-tab="dashboard">Dashboard</button>
+                        <button class="nav-tab" data-tab="threats">Threats</button>
+                        <button class="nav-tab" data-tab="data">Data Protection</button>
+                        <button class="nav-tab" data-tab="identity">Identity</button>
+                        <button class="nav-tab" data-tab="endpoints">Endpoints</button>
+                        <button class="nav-tab" data-tab="network">Network</button>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <button id="theme-toggle" class="btn btn--secondary btn--sm">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <button id="ai-chat-toggle" class="btn btn--primary btn--sm">
+                        Security Copilot
+                    </button>
+                    <div class="user-menu">
+                        <button id="user-menu-btn" class="user-menu__btn">
+                            <div class="user-avatar"></div>
+                            <span id="user-name">Loading...</span>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown hidden">
+                            <div class="user-dropdown__item">
+                                <span id="user-email">Loading...</span>
+                            </div>
+                            <div class="user-dropdown__item">
+                                <span id="user-role" class="status status--info">Loading...</span>
+                            </div>
+                            <hr class="user-dropdown__divider">
+                            <button id="logout-btn" class="user-dropdown__btn">Sign out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content tab-content--active">
+                <div class="dashboard-header">
+                    <h2>Security Operations Center</h2>
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <div class="stat-card__icon">📊</div>
+                            <div class="stat-card__content">
+                                <div class="stat-card__value" id="security-score">785</div>
+                                <div class="stat-card__label">Secure Score</div>
+                                <div class="stat-card__trend trend-up">+12</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card__icon">🛡️</div>
+                            <div class="stat-card__content">
+                                <div class="stat-card__value" id="threats-blocked">1,247</div>
+                                <div class="stat-card__label">Threats Blocked</div>
+                                <div class="stat-card__trend trend-up">+127</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card__icon">⚠️</div>
+                            <div class="stat-card__content">
+                                <div class="stat-card__value" id="incidents-active">3</div>
+                                <div class="stat-card__label">Active Incidents</div>
+                                <div class="stat-card__trend trend-down">-2</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card__icon">✅</div>
+                            <div class="stat-card__content">
+                                <div class="stat-card__value" id="compliance-score">86%</div>
+                                <div class="stat-card__label">Compliance</div>
+                                <div class="stat-card__trend trend-up">+3%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Security Score Chart -->
+                    <div class="card dashboard-card">
+                        <div class="card__header">
+                            <h3>Microsoft Secure Score Trend</h3>
+                        </div>
+                        <div class="card__body">
+                            <canvas id="securityScoreChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Zero Trust Assessment -->
+                    <div class="card dashboard-card">
+                        <div class="card__header">
+                            <h3>Zero Trust Maturity</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="zero-trust-grid">
+                                <div class="zero-trust-item">
+                                    <div class="zero-trust-label">Identity</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 85%"></div>
+                                    </div>
+                                    <div class="zero-trust-score">85%</div>
+                                </div>
+                                <div class="zero-trust-item">
+                                    <div class="zero-trust-label">Devices</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 78%"></div>
+                                    </div>
+                                    <div class="zero-trust-score">78%</div>
+                                </div>
+                                <div class="zero-trust-item">
+                                    <div class="zero-trust-label">Data</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 82%"></div>
+                                    </div>
+                                    <div class="zero-trust-score">82%</div>
+                                </div>
+                                <div class="zero-trust-item">
+                                    <div class="zero-trust-label">Applications</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 75%"></div>
+                                    </div>
+                                    <div class="zero-trust-score">75%</div>
+                                </div>
+                                <div class="zero-trust-item">
+                                    <div class="zero-trust-label">Infrastructure</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 80%"></div>
+                                    </div>
+                                    <div class="zero-trust-score">80%</div>
+                                </div>
+                                <div class="zero-trust-item">
+                                    <div class="zero-trust-label">Networks</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 73%"></div>
+                                    </div>
+                                    <div class="zero-trust-score">73%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Incidents -->
+                    <div class="card dashboard-card">
+                        <div class="card__header">
+                            <h3>Recent Security Incidents</h3>
+                        </div>
+                        <div class="card__body">
+                            <div id="incidents-list" class="incidents-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Compliance Status -->
+                    <div class="card dashboard-card">
+                        <div class="card__header">
+                            <h3>Compliance Framework Status</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="compliance-grid">
+                                <div class="compliance-item">
+                                    <div class="compliance-name">NIST</div>
+                                    <div class="status status--success">Compliant</div>
+                                    <div class="compliance-score">85%</div>
+                                </div>
+                                <div class="compliance-item">
+                                    <div class="compliance-name">ISO 27001</div>
+                                    <div class="status status--warning">In Progress</div>
+                                    <div class="compliance-score">78%</div>
+                                </div>
+                                <div class="compliance-item">
+                                    <div class="compliance-name">CIS Controls</div>
+                                    <div class="status status--success">Compliant</div>
+                                    <div class="compliance-score">92%</div>
+                                </div>
+                                <div class="compliance-item">
+                                    <div class="compliance-name">SOC 2</div>
+                                    <div class="status status--success">Compliant</div>
+                                    <div class="compliance-score">88%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threats Tab -->
+            <div id="threats-tab" class="tab-content">
+                <div class="module-header">
+                    <h2>Threat Defense</h2>
+                    <p>Real-time threat detection and response</p>
+                </div>
+                <div class="module-grid">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Threat Detection Overview</h3>
+                        </div>
+                        <div class="card__body">
+                            <canvas id="threatsChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Current Threats</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="threat-metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Blocked Today</div>
+                                    <div class="metric-value">1,247</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Suspicious Activities</div>
+                                    <div class="metric-value">23</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Critical Threats</div>
+                                    <div class="metric-value">3</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Protection Tab -->
+            <div id="data-tab" class="tab-content">
+                <div class="module-header">
+                    <h2>Data Protection</h2>
+                    <p>Encryption, classification, and data loss prevention</p>
+                </div>
+                <div class="module-grid">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Data Classification</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="data-metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Confidential</div>
+                                    <div class="metric-value">2,341</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Internal</div>
+                                    <div class="metric-value">15,678</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Public</div>
+                                    <div class="metric-value">8,902</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Encryption Status</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="encryption-status">
+                                <div class="status-item">
+                                    <span>Data at Rest</span>
+                                    <div class="status status--success">Encrypted</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Data in Transit</span>
+                                    <div class="status status--success">Encrypted</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Email Encryption</span>
+                                    <div class="status status--success">Active</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identity Tab -->
+            <div id="identity-tab" class="tab-content">
+                <div class="module-header">
+                    <h2>Identity & Access Management</h2>
+                    <p>User authentication, authorization, and access control</p>
+                </div>
+                <div class="module-grid">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>User Security Status</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="identity-metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Total Users</div>
+                                    <div class="metric-value">875</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">MFA Enabled</div>
+                                    <div class="metric-value">832</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Privileged Accounts</div>
+                                    <div class="metric-value">23</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Risky Users</div>
+                                    <div class="metric-value">4</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Access Policies</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="policy-status">
+                                <div class="status-item">
+                                    <span>Conditional Access</span>
+                                    <div class="status status--success">Active</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Password Policy</span>
+                                    <div class="status status--success">Enforced</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Session Management</span>
+                                    <div class="status status--success">Active</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Endpoints Tab -->
+            <div id="endpoints-tab" class="tab-content">
+                <div class="module-header">
+                    <h2>Endpoint Security</h2>
+                    <p>Device compliance, antivirus, and patch management</p>
+                </div>
+                <div class="module-grid">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Device Compliance</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="device-metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Total Devices</div>
+                                    <div class="metric-value">1,250</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Compliant</div>
+                                    <div class="metric-value">1,187</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Non-Compliant</div>
+                                    <div class="metric-value">45</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Unknown</div>
+                                    <div class="metric-value">18</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Security Status</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="security-status">
+                                <div class="status-item">
+                                    <span>Antivirus Protection</span>
+                                    <div class="status status--success">Active</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Patch Management</span>
+                                    <div class="status status--success">Up to Date</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Firewall</span>
+                                    <div class="status status--success">Enabled</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Tab -->
+            <div id="network-tab" class="tab-content">
+                <div class="module-header">
+                    <h2>Network Security</h2>
+                    <p>Firewall, VPN, and network monitoring</p>
+                </div>
+                <div class="module-grid">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Network Status</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="network-metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Active Connections</div>
+                                    <div class="metric-value">1,847</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">VPN Sessions</div>
+                                    <div class="metric-value">234</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Blocked IPs</div>
+                                    <div class="metric-value">156</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Firewall Status</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="firewall-status">
+                                <div class="status-item">
+                                    <span>Perimeter Firewall</span>
+                                    <div class="status status--success">Active</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Internal Segmentation</span>
+                                    <div class="status status--success">Enabled</div>
+                                </div>
+                                <div class="status-item">
+                                    <span>Intrusion Detection</span>
+                                    <div class="status status--success">Monitoring</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Security Copilot Chat -->
+    <div id="ai-chat" class="ai-chat hidden">
+        <div class="ai-chat__header">
+            <h3>Security Copilot</h3>
+            <button id="ai-chat-close" class="ai-chat__close">×</button>
+        </div>
+        <div class="ai-chat__messages" id="ai-messages">
+            <div class="ai-message">
+                <div class="ai-message__avatar">🤖</div>
+                <div class="ai-message__content">
+                    <p>Hello! I'm your Security Copilot. I can help you with security analysis, threat intelligence, and compliance questions. What would you like to know?</p>
+                </div>
+            </div>
+        </div>
+        <div class="ai-chat__input">
+            <input type="text" id="ai-input" placeholder="Ask about security threats, compliance, or recommendations..." class="form-control">
+            <button id="ai-send" class="btn btn--primary">Send</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
